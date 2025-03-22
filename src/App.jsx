@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import History from './pages/History';
+import Charts from './pages/Charts';
 
 function App() {
   const isAuthenticated = localStorage.getItem('loggedInUser');
@@ -13,6 +14,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/history" element={isAuthenticated ? <History /> : <Navigate to="/login" />} />
+      <Route path="/charts" element={<Charts />} />
     </Routes>
   );
 }

@@ -1,13 +1,16 @@
+// src/pages/History.jsx
 import { useEffect, useState } from 'react';
 import jsPDF from 'jspdf';
+import { useNavigate } from 'react-router-dom';
+
 
 const History = () => {
   const user = JSON.parse(localStorage.getItem('loggedInUser'));
   const [history, setHistory] = useState([]);
   const [exportFormat, setExportFormat] = useState('json');
-
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -130,8 +133,23 @@ const History = () => {
 
   const filteredHistory = history.filter((entry) => isDateInRange(entry.date));
 
+  const completedStreak = (() => {
+    let streak = 0;
+    for (let i = 0; i < filteredHistory.length; i++) {
+      const entry = filteredHistory[i];
+      const allTomas = entry.tomas.length > 0 && entry.tomas.every((t) => t.taken);
+      const vitals = entry.vitals?.weight && entry.vitals?.systolic && entry.vitals?.diastolic && entry.vitals?.pulse;
+      if (allTomas && vitals) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+    return streak;
+  })();
+
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Historial</h1>
         <div className="flex gap-2 items-center">
@@ -153,6 +171,13 @@ const History = () => {
           </button>
 
           <button
+            onClick={() => window.location.href = '/charts'}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+            Ver gráficas
+            </button>
+
+          <button
             onClick={() => (window.location.href = '/')}
             className="bg-gray-500 text-white px-4 py-2 rounded"
           >
@@ -161,7 +186,6 @@ const History = () => {
         </div>
       </div>
 
-      {/* FILTRO POR FECHAS */}
       <div className="flex flex-col md:flex-row gap-4 items-center mb-4">
         <div className="flex flex-col">
           <label className="text-sm text-gray-600">Desde:</label>
@@ -183,6 +207,14 @@ const History = () => {
           />
         </div>
       </div>
+
+      {filteredHistory.length > 0 && (
+        <div className="mb-6">
+          <p className="text-green-700 font-semibold">
+            🔁 Días consecutivos completando todo: {completedStreak}
+          </p>
+        </div>
+      )}
 
       {filteredHistory.length === 0 ? (
         <p>No hay registros en este rango de fechas.</p>

@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import jsPDF from 'jspdf';
 import axios from 'axios';
 
 const History = () => {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
-  const [exportFormat, setExportFormat] = useState('json');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -39,51 +37,6 @@ const History = () => {
       .catch(() => navigate('/login'));
   }, [navigate]);
 
-  const triggerDownload = (blob, filename) => {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-  };
-
-  const handleExport = () => {
-    const filename = `historial.${exportFormat}`;
-
-    if (exportFormat === 'json') {
-      const jsonStr = JSON.stringify(history, null, 2);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      triggerDownload(blob, filename);
-    }
-
-    if (exportFormat === 'csv') {
-      const csvRows = ['Fecha,Medicamento,Tomado'];
-      
-      history.forEach((entry) => {
-        entry.tomas.forEach((toma) => {
-          csvRows.push(`${entry.date},${toma.medName},${toma.taken ? 'Sí' : 'No'}`);
-        });
-      });
-
-      const csvBlob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
-      triggerDownload(csvBlob, filename);
-    }
-
-    if (exportFormat === 'pdf') {
-      const doc = new jsPDF();
-      let y = 10;
-      history.forEach((entry) => {
-        doc.text(`Fecha: ${entry.date}`, 10, y);
-        y += 10;
-        entry.tomas.forEach((toma) => {
-          doc.text(`- ${toma.medName}: ${toma.taken ? 'Sí' : 'No'}`, 10, y);
-          y += 8;
-        });
-        y += 10;
-      });
-      doc.save(filename);
-    }
-  };
-
   return (
     <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 bg-white dark:bg-gray-900 dark:text-white rounded shadow">
       <div className="flex justify-between items-center mb-6">
@@ -105,24 +58,6 @@ const History = () => {
       </div>
 
       <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded space-y-4">
-        <div className="flex items-center gap-4 mb-4">
-          <select
-            value={exportFormat}
-            onChange={(e) => setExportFormat(e.target.value)}
-            className="border p-2 rounded dark:bg-gray-700 dark:text-white"
-          >
-            <option value="json">JSON</option>
-            <option value="csv">CSV (Excel)</option>
-            <option value="pdf">PDF</option>
-          </select>
-          <button
-            onClick={handleExport}
-            className="bg-green-500 text-white px-4 py-2 rounded"
-          >
-            Descargar historial
-          </button>
-        </div>
-        
         {history.length === 0 ? (
           <p className="text-gray-500 dark:text-gray-400">No hay registros en el historial.</p>
         ) : (

@@ -11,6 +11,7 @@ const Dashboard = () => {
   const [medications, setMedications] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [error, setError] = useState('');
+  const [isMenuOpen, setIsMenuOpen] = useState(false); // Manage menu open state
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -56,10 +57,33 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 bg-white dark:bg-gray-900 dark:text-white rounded shadow">
       {error && <p className="text-red-500">{error}</p>}
-      
+
+      {/* Menu */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <div className="flex gap-4">
+
+        {/* Hamburger Icon */}
+        <div className="block md:hidden">
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)} 
+            className="text-white focus:outline-none"
+          >
+            {isMenuOpen ? (
+              // Close icon
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            ) : (
+              // Hamburger icon
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Menu Options (Mobile) */}
+        <div className={`md:flex ${isMenuOpen ? 'block' : 'hidden'} space-x-4`}>
           <button 
             onClick={() => navigate('/history')} 
             className="bg-blue-500 text-white px-4 py-2 rounded"

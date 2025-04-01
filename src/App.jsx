@@ -16,7 +16,7 @@ function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/history" element={isAuthenticated ? <History /> : <Navigate to="/login" />} />
       <Route path="/charts" element={isAuthenticated ? <Charts /> : <Navigate to="/login" />} />
-      <Route path="/reminders" element={isAuthenticated ? <Reminders /> : <Navigate to="/login" />} /> {/* ✅ Revisar esta línea */}
+      <Route path="/reminders" element={isAuthenticated ? <Reminders /> : <Navigate to="/login" />} />
     </Routes>
   );
 }

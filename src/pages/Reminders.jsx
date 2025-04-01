@@ -4,55 +4,112 @@ import { useNavigate } from 'react-router-dom';
 const Reminders = () => {
   const navigate = useNavigate();
   const [reminders, setReminders] = useState([]);
+  const [medications, setMedications] = useState([]);
+  const [selectedMeds, setSelectedMeds] = useState([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [time, setTime] = useState('');
   const [repeat, setRepeat] = useState('Nunca');
+  const [editingIndex, setEditingIndex] = useState(null);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!user) navigate('/login');
 
     const storedReminders = JSON.parse(localStorage.getItem(`reminders_${user.email}`)) || [];
+    const storedMedications = JSON.parse(localStorage.getItem(`meds_${user.email}`)) || [];
+    
     setReminders(storedReminders);
-  }, [navigate]);
+    setMedications(storedMedications);
+
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+
+    // Revisar cada minuto los recordatorios
+    const interval = setInterval(checkReminders, 60000); // Revisa cada minuto
+    return () => clearInterval(interval);
+  }, [navigate]); // Dependencia vacía para ejecutar una vez al montar el componente
+
+  // Función para revisar los recordatorios
+  const checkReminders = () => {
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // Formato HH:MM
+
+    reminders.forEach(reminder => {
+      if (reminder.time === currentTime) {
+        showNotification(reminder); // Llamar a la notificación si hay coincidencia
+      }
+    });
+  };
+
+  // Función para mostrar notificaciones
+  const showNotification = (reminder) => {
+    if (Notification.permission === 'granted') {
+      navigator.serviceWorker.ready.then(registration => {
+        const medsList = reminder.meds.map(medId => {
+          const med = medications.find(med => med.id === medId);
+          return med ? med.name : null;
+        }).filter(Boolean).join(", ");
+
+        registration.showNotification(`💊 Recordatorio: ${reminder.name}`, {
+          body: `Descripción: ${reminder.description} - Medicamentos: ${medsList || 'Ninguno'}`,
+          icon: '/icon.png',  // Cambia esto si tienes un icono
+          tag: reminder.name
+        });
+      });
+    }
+  };
 
   const saveReminders = (updatedReminders) => {
     const user = JSON.parse(localStorage.getItem('loggedInUser'));
+    if (!user) return;
+    
     localStorage.setItem(`reminders_${user.email}`, JSON.stringify(updatedReminders));
     setReminders(updatedReminders);
   };
 
-  const addReminder = () => {
+  const addOrUpdateReminder = () => {
     if (!name || !time) return;
 
     const newReminder = { 
       name, 
       description, 
       time, 
-      repeat, 
-      completed: false, 
-      lastCompleted: null 
+      repeat,
+      meds: selectedMeds 
     };
 
-    const updatedReminders = [...reminders, newReminder];
-    saveReminders(updatedReminders);
+    let updatedReminders;
 
+    if (editingIndex !== null) {
+      updatedReminders = reminders.map((reminder, index) => index === editingIndex ? newReminder : reminder);
+      setEditingIndex(null);
+    } else {
+      updatedReminders = [...reminders, newReminder];
+    }
+
+    saveReminders(updatedReminders);
+    resetForm();
+  };
+
+  const resetForm = () => {
     setName('');
     setDescription('');
     setTime('');
     setRepeat('Nunca');
+    setSelectedMeds([]);
+    setEditingIndex(null);
   };
 
-  const toggleComplete = (index) => {
-    const updatedReminders = reminders.map((reminder, i) => {
-      if (i === index) {
-        const now = new Date().toISOString().split('T')[0];
-        return { ...reminder, completed: !reminder.completed, lastCompleted: now };
-      }
-      return reminder;
-    });
-    saveReminders(updatedReminders);
+  const editReminder = (index) => {
+    const reminder = reminders[index];
+    setName(reminder.name);
+    setDescription(reminder.description);
+    setTime(reminder.time);
+    setRepeat(reminder.repeat);
+    setSelectedMeds(reminder.meds || []);
+    setEditingIndex(index);
   };
 
   const deleteReminder = (index) => {
@@ -60,98 +117,87 @@ const Reminders = () => {
     saveReminders(updatedReminders);
   };
 
+  const handleMedSelection = (e) => {
+    const medId = e.target.value;
+    if (medId && !selectedMeds.includes(medId)) {
+      setSelectedMeds([...selectedMeds, medId]);
+    }
+  };
+
+  const removeMed = (medId) => {
+    setSelectedMeds(selectedMeds.filter(id => id !== medId));
+  };
+
   return (
     <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 bg-white dark:bg-gray-900 dark:text-white rounded shadow">
-      
-      {/* Barra superior con botones */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Recordatorios</h1>
-        <div className="flex gap-4">
-          <button 
-            onClick={() => navigate('/')} 
-            className="bg-gray-500 text-white px-4 py-2 rounded"
-          >
-            Volver al Dashboard
-          </button>
-        </div>
+        <button 
+          onClick={() => navigate('/')} 
+          className="bg-gray-500 text-white px-4 py-2 rounded"
+        >
+          Volver al Dashboard
+        </button>
       </div>
       
-      {/* Contenedor principal con dos columnas */}
       <div className="flex flex-col md:flex-row gap-6">
-
-        {/* Columna izquierda - Listado de recordatorios */}
         <div className="md:w-1/2 space-y-4 bg-gray-100 dark:bg-gray-800 p-4 rounded">
           <h2 className="text-xl font-bold mb-2">Listado de Recordatorios</h2>
           {reminders.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">No hay recordatorios configurados.</p>
+            <p>No hay recordatorios configurados.</p>
           ) : (
             reminders.map((reminder, index) => (
-              <div 
-                key={index} 
-                className={`p-4 border rounded ${reminder.completed ? 'bg-green-200 dark:bg-green-700' : 'bg-gray-200 dark:bg-gray-800'} flex justify-between items-center`}
-              >
+              <div key={index} className="p-4 border rounded mb-4">
                 <div>
-                  <strong>{reminder.name}</strong> - {reminder.description || "Sin descripción"} - {reminder.time}
-                  <br/>
-                  <em>Repetición: {reminder.repeat}</em>
+                  <strong>{reminder.name}</strong> - {reminder.time} - {reminder.repeat}
+                  <br />
+                  Descripción: {reminder.description}
+                  <br />
+                  Medicamentos Asociados: 
+                  <ul>
+                    {reminder.meds.map((medId) => {
+                      const med = medications.find(med => med.id === medId);
+                      return med ? <li key={medId}>{med.name}</li> : null;
+                    })}
+                  </ul>
                 </div>
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => toggleComplete(index)} 
-                    className={`px-4 py-1 rounded ${reminder.completed ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}`}
-                  >
-                    {reminder.completed ? 'Incompleto' : 'Completado'}
-                  </button>
-                  <button 
-                    onClick={() => deleteReminder(index)} 
-                    className="bg-gray-500 text-white px-4 py-1 rounded"
-                  >
-                    Eliminar
-                  </button>
+                <div className="flex gap-2 mt-2">
+                  <button onClick={() => editReminder(index)} className="bg-yellow-500 text-white px-4 py-1 rounded">Editar</button>
+                  <button onClick={() => deleteReminder(index)} className="bg-red-500 text-white px-4 py-1 rounded">Eliminar</button>
                 </div>
               </div>
             ))
           )}
         </div>
 
-        {/* Columna derecha - Formulario de añadir recordatorios */}
         <div className="md:w-1/2 bg-gray-100 dark:bg-gray-800 p-4 rounded">
-          <h2 className="text-xl font-bold mb-2">Añadir Recordatorio</h2>
-          <input 
-            type="text" 
-            value={name} 
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Nombre" 
-            className="p-2 border rounded mb-2 w-full dark:bg-gray-700 dark:text-white"
-          />
-          <input 
-            type="text" 
-            value={description} 
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Descripción" 
-            className="p-2 border rounded mb-2 w-full dark:bg-gray-700 dark:text-white"
-          />
-          <input 
-            type="time" 
-            value={time} 
-            onChange={(e) => setTime(e.target.value)}
-            className="p-2 border rounded mb-2 w-full dark:bg-gray-700 dark:text-white"
-          />
-          <select 
-            value={repeat}
-            onChange={(e) => setRepeat(e.target.value)}
-            className="p-2 border rounded mb-2 w-full dark:bg-gray-700 dark:text-white"
-          >
+          <h2 className="text-xl font-bold mb-2">{editingIndex !== null ? 'Editar Recordatorio' : 'Añadir Recordatorio'}</h2>
+          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre" className="p-2 border rounded mb-2 w-full" />
+          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" className="p-2 border rounded mb-2 w-full" />
+          <input type="time" value={time} onChange={e => setTime(e.target.value)} className="p-2 border rounded mb-2 w-full" />
+          <select value={repeat} onChange={e => setRepeat(e.target.value)} className="p-2 border rounded mb-2 w-full">
             <option value="Nunca">Nunca</option>
             <option value="Diario">Diario</option>
             <option value="Semanal">Semanal</option>
             <option value="Mensual">Mensual</option>
           </select>
+          <select onChange={handleMedSelection} className="p-2 border rounded mb-2 w-full">
+            <option value="">Seleccionar Medicamento</option>
+            {medications.map((med) => (
+              <option key={med.id} value={med.id}>{med.name}</option>
+            ))}
+          </select>
+          <ul>
+            {selectedMeds.map((medId) => {
+              const med = medications.find(med => med.id === medId);
+              return med ? <li key={medId}>{med.name} <button onClick={() => removeMed(medId)}>❌</button></li> : null;
+            })}
+          </ul>
           <button 
-            onClick={addReminder} 
+            onClick={addOrUpdateReminder} 
             className="bg-blue-500 text-white px-4 py-2 rounded mt-2 w-full"
           >
-            Añadir Recordatorio
+            {editingIndex !== null ? 'Actualizar Recordatorio' : 'Guardar Recordatorio'}
           </button>
         </div>
       </div>

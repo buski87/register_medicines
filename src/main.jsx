@@ -4,11 +4,10 @@ import App from './App.jsx';
 import { BrowserRouter } from 'react-router-dom';
 import './index.css';
 
-// Activar modo oscuro desde localStorage si está guardado
-if (localStorage.getItem('theme') === 'dark') {
-  document.documentElement.classList.add('dark');
-} else {
-  document.documentElement.classList.remove('dark');
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(reg => console.log('Service Worker registrado con éxito', reg))
+    .catch(err => console.error('Error al registrar el Service Worker', err));
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

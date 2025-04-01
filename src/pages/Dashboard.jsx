@@ -9,6 +9,7 @@ import VitalSignsForm from '../components/VitalSignsForm';
 const Dashboard = () => {
   const navigate = useNavigate();
   const [medications, setMedications] = useState([]);
+  const [reminders, setReminders] = useState([]);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -25,20 +26,26 @@ const Dashboard = () => {
       .then(() => {
         const user = JSON.parse(localStorage.getItem('loggedInUser'));
         const stored = JSON.parse(localStorage.getItem(`meds_${user.email}`)) || [];
+        const storedReminders = JSON.parse(localStorage.getItem(`reminders_${user.email}`)) || [];
         setMedications(stored);
+        setReminders(storedReminders);
       })
-      .catch((err) => {
-        const errorMessage = err.response?.data?.message || 'Token inválido o expirado.';
-        
-        if (errorMessage.includes('expirado')) {
-          localStorage.setItem('expiredMessage', errorMessage);
-        }
-
-        localStorage.removeItem('token');
-        localStorage.removeItem('loggedInUser');
-        navigate('/login');
-      });
+      .catch(() => navigate('/login'));
   }, [navigate]);
+
+  const checkReminders = () => {
+    const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    reminders.forEach(reminder => {
+      if (reminder.time === now && !reminder.completed) {
+        alert(`🔔 Recordatorio: ${reminder.name} - ${reminder.description}`);
+      }
+    });
+  };
+
+  useEffect(() => {
+    const interval = setInterval(checkReminders, 60000);
+    return () => clearInterval(interval);
+  }, [reminders]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -64,6 +71,12 @@ const Dashboard = () => {
             className="bg-green-500 text-white px-4 py-2 rounded"
           >
             Ver gráficas
+          </button>
+          <button 
+            onClick={() => navigate('/reminders')} 
+            className="bg-yellow-500 text-black px-4 py-2 rounded"
+          >
+            Recordatorios
           </button>
           <button 
             onClick={handleLogout} 

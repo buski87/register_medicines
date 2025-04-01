@@ -28,32 +28,18 @@ const Charts = () => {
           if (key.startsWith(`tomas_${user.email}_`)) {
             const date = key.split(`tomas_${user.email}_`)[1];
             const tomas = JSON.parse(localStorage.getItem(key));
-            const vitalsKey = `vitals_${user.email}_${date}`;
-            const vitals = JSON.parse(localStorage.getItem(vitalsKey));
-            dates.push({ date, tomas, vitals });
+            dates.push({ date, tomas });
           }
         });
 
         dates.sort((a, b) => a.date.localeCompare(b.date));
         setHistory(dates);
       })
-      .catch((err) => {
-        const errorMessage = err.response?.data?.message || 'Token inválido o expirado.';
-        
-        if (errorMessage.includes('expirado')) {
-          localStorage.setItem('expiredMessage', errorMessage);
-        }
-
-        localStorage.removeItem('token');
-        localStorage.removeItem('loggedInUser');
-        navigate('/login');
-      });
+      .catch(() => navigate('/login'));
   }, [navigate]);
 
   return (
     <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 bg-white dark:bg-gray-900 dark:text-white rounded shadow">
-      {error && <p className="text-red-500">{error}</p>}
-      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Gráficas de seguimiento</h1>
         <div className="flex gap-4">
@@ -61,7 +47,7 @@ const Charts = () => {
             onClick={() => navigate('/history')} 
             className="bg-blue-500 text-white px-4 py-2 rounded"
           >
-            Ver historial
+            Ver Historial
           </button>
           <button 
             onClick={() => navigate('/')} 
@@ -72,11 +58,13 @@ const Charts = () => {
         </div>
       </div>
 
-      {history.length === 0 ? (
-        <p>No hay registros disponibles para mostrar gráficas.</p>
-      ) : (
-        <HealthCharts data={history} />
-      )}
+      <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded space-y-4">
+        {history.length === 0 ? (
+          <p className="text-gray-500 dark:text-gray-400">No hay datos disponibles para mostrar gráficas.</p>
+        ) : (
+          <HealthCharts data={history} />
+        )}
+      </div>
     </div>
   );
 };

@@ -4,38 +4,21 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import History from './pages/History';
 import Charts from './pages/Charts';
-import axios from 'axios';
-import { useEffect, useState } from 'react';
+import Reminders from './pages/Reminders';
 
-const App = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+function App() {
+  const isAuthenticated = localStorage.getItem('loggedInUser');
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-      // Intentar acceder a una ruta protegida para validar el token
-      axios.get('http://localhost:5000/api/users/protected')
-        .then(() => setIsAuthenticated(true))
-        .catch(() => {
-          setIsAuthenticated(false);
-          localStorage.removeItem('token');
-          localStorage.removeItem('loggedInUser');
-        });
-    }
-  }, []);
-
-  return (
+  return (  
     <Routes>
       <Route path="/" element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/history" element={isAuthenticated ? <History /> : <Navigate to="/login" />} />
       <Route path="/charts" element={isAuthenticated ? <Charts /> : <Navigate to="/login" />} />
+      <Route path="/reminders" element={isAuthenticated ? <Reminders /> : <Navigate to="/login" />} /> {/* ✅ Revisar esta línea */}
     </Routes>
   );
-};
+}
 
 export default App;

@@ -16,8 +16,9 @@ const Reminders = () => {
     const user = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!user) navigate('/login');
 
-    const storedReminders = JSON.parse(localStorage.getItem(`reminders_${user.email}`)) || [];
-    const storedMedications = JSON.parse(localStorage.getItem(`meds_${user.email}`)) || [];
+    const userEmail = user.email;
+    const storedReminders = JSON.parse(localStorage.getItem(`reminders_${userEmail}`)) || [];
+    const storedMedications = JSON.parse(localStorage.getItem(`meds_${userEmail}`)) || [];
     
     setReminders(storedReminders);
     setMedications(storedMedications);
@@ -33,12 +34,18 @@ const Reminders = () => {
 
   // Función para revisar los recordatorios
   const checkReminders = () => {
-    const now = new Date();
-    const currentTime = now.toTimeString().slice(0, 5); // Formato HH:MM
+    const userEmail = JSON.parse(localStorage.getItem('loggedInUser')).email;
+    const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
 
     reminders.forEach(reminder => {
-      if (reminder.time === currentTime) {
-        showNotification(reminder); // Llamar a la notificación si hay coincidencia
+      if (reminder.time === now && !reminder.completed) {
+        alert(`🔔 Recordatorio: ${reminder.name} - ${reminder.description}`);
+        
+        // Mostrar la notificación
+        showNotification(reminder);
+        
+        reminder.completed = true; // Marca como completado
+        localStorage.setItem(`reminders_${userEmail}`, JSON.stringify(reminders));
       }
     });
   };
@@ -51,10 +58,10 @@ const Reminders = () => {
           const med = medications.find(med => med.id === medId);
           return med ? med.name : null;
         }).filter(Boolean).join(", ");
-
+  
         registration.showNotification(`💊 Recordatorio: ${reminder.name}`, {
           body: `Descripción: ${reminder.description} - Medicamentos: ${medsList || 'Ninguno'}`,
-          icon: '/icon.png',  // Cambia esto si tienes un icono
+          icon: '/path-to-your-icon.png', // Asegúrate de tener un ícono
           tag: reminder.name
         });
       });
@@ -65,7 +72,8 @@ const Reminders = () => {
     const user = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!user) return;
     
-    localStorage.setItem(`reminders_${user.email}`, JSON.stringify(updatedReminders));
+    const userEmail = user.email;
+    localStorage.setItem(`reminders_${userEmail}`, JSON.stringify(updatedReminders));
     setReminders(updatedReminders);
   };
 

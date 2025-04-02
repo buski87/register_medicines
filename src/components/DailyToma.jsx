@@ -9,15 +9,20 @@ const DailyToma = ({ medications, userEmail }) => {
   });
 
   const handleMark = (medId, time, taken) => {
-    const updated = [...tomas.filter(t => !(t.medId === medId && t.time === time)), {
-      medId,
-      time,
-      taken,
-      timestamp: new Date().toISOString(),
-    }];
+    const updated = [
+      ...tomas.filter(t => !(t.medId === medId && t.time === time)),
+      {
+        medId,
+        medName: medications.find(med => med.id === medId)?.name, // Agregar el nombre del medicamento aquí
+        time,
+        taken,
+        timestamp: new Date().toISOString(),
+      },
+    ];
     setTomas(updated);
     localStorage.setItem(key, JSON.stringify(updated));
   };
+  
 
   const isTaken = (medId, time) =>
     tomas.find(t => t.medId === medId && t.time === time)?.taken;

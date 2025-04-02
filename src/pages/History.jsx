@@ -64,9 +64,13 @@ const History = () => {
           history.map(entry => (
             <div key={entry.date} className="p-4 border rounded bg-gray-200 dark:bg-gray-700 mb-4">
               <h2 className="text-lg font-bold">{entry.date}</h2>
-              {entry.tomas.map((toma, index) => (
-                <p key={index}>{toma.medName}: {toma.taken ? '✅ Tomado' : '❌ No tomado'}</p>
-              ))}
+              {entry.tomas.map((toma, index) => {
+                return (
+                  <div key={index} className="mb-2">
+                    <p><strong>{toma.medName}:</strong> {toma.taken ? '✅ Tomado' : '❌ No tomado'}</p>
+                  </div>
+                );
+              })}
             </div>
           ))
         )}

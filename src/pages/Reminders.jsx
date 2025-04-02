@@ -30,22 +30,23 @@ const Reminders = () => {
     // Revisar cada minuto los recordatorios
     const interval = setInterval(checkReminders, 60000); // Revisa cada minuto
     return () => clearInterval(interval);
-  }, [navigate]); // Dependencia vacía para ejecutar una vez al montar el componente
+  }, [navigate]);
 
   // Función para revisar los recordatorios
   const checkReminders = () => {
-    const userEmail = JSON.parse(localStorage.getItem('loggedInUser')).email;
-    const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    const now = new Date().toLocaleTimeString('en-GB', { hour12: false }).slice(0, 5); // Formato HH:MM
+    console.log("Hora actual: ", now); // Log para ver la hora actual
+    reminders.forEach((reminder) => {
+      console.log("Comparando con recordatorio: ", reminder.time); // Log para ver los tiempos de los recordatorios
 
-    reminders.forEach(reminder => {
+      // Verificar si el recordatorio debe activarse
       if (reminder.time === now && !reminder.completed) {
+        console.log(`Recordatorio activado: ${reminder.name} a las ${reminder.time}`);
         alert(`🔔 Recordatorio: ${reminder.name} - ${reminder.description}`);
-        
-        // Mostrar la notificación
-        showNotification(reminder);
-        
+        showNotification(reminder); // Llamada para mostrar la notificación
         reminder.completed = true; // Marca como completado
-        localStorage.setItem(`reminders_${userEmail}`, JSON.stringify(reminders));
+        const updatedReminders = [...reminders]; // Copia de los recordatorios
+        saveReminders(updatedReminders); // Guarda la lista actualizada de recordatorios
       }
     });
   };
@@ -53,18 +54,23 @@ const Reminders = () => {
   // Función para mostrar notificaciones
   const showNotification = (reminder) => {
     if (Notification.permission === 'granted') {
-      navigator.serviceWorker.ready.then(registration => {
-        const medsList = reminder.meds.map(medId => {
-          const med = medications.find(med => med.id === medId);
-          return med ? med.name : null;
-        }).filter(Boolean).join(", ");
-  
+      navigator.serviceWorker.ready.then((registration) => {
+        const medsList = reminder.meds
+          .map((medId) => {
+            const med = medications.find((med) => med.id === medId);
+            return med ? med.name : null;
+          })
+          .filter(Boolean)
+          .join(", ");
+
         registration.showNotification(`💊 Recordatorio: ${reminder.name}`, {
           body: `Descripción: ${reminder.description} - Medicamentos: ${medsList || 'Ninguno'}`,
           icon: '/path-to-your-icon.png', // Asegúrate de tener un ícono
-          tag: reminder.name
+          tag: reminder.name,
         });
       });
+    } else {
+      console.log("Permiso de notificación no concedido");
     }
   };
 
@@ -72,8 +78,7 @@ const Reminders = () => {
     const user = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!user) return;
     
-    const userEmail = user.email;
-    localStorage.setItem(`reminders_${userEmail}`, JSON.stringify(updatedReminders));
+    localStorage.setItem(`reminders_${user.email}`, JSON.stringify(updatedReminders));
     setReminders(updatedReminders);
   };
 
@@ -85,7 +90,8 @@ const Reminders = () => {
       description, 
       time, 
       repeat,
-      meds: selectedMeds 
+      meds: selectedMeds,
+      completed: false, // Asegúrate de que cada nuevo recordatorio tenga esta propiedad
     };
 
     let updatedReminders;
@@ -133,7 +139,7 @@ const Reminders = () => {
   };
 
   const removeMed = (medId) => {
-    setSelectedMeds(selectedMeds.filter(id => id !== medId));
+    setSelectedMeds(selectedMeds.filter((id) => id !== medId));
   };
 
   return (
@@ -180,16 +186,16 @@ const Reminders = () => {
 
         <div className="md:w-1/2 bg-gray-100 dark:bg-gray-800 p-4 rounded">
           <h2 className="text-xl font-bold mb-2">{editingIndex !== null ? 'Editar Recordatorio' : 'Añadir Recordatorio'}</h2>
-          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre" className="p-2 border rounded mb-2 w-full" />
-          <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" className="p-2 border rounded mb-2 w-full" />
-          <input type="time" value={time} onChange={e => setTime(e.target.value)} className="p-2 border rounded mb-2 w-full" />
-          <select value={repeat} onChange={e => setRepeat(e.target.value)} className="p-2 border rounded mb-2 w-full">
+          <input id="reminderName" name="reminderName" type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nombre" className="p-2 border rounded mb-2 w-full" />
+          <input id="reminderDescription" name="reminderDescription" type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Descripción" className="p-2 border rounded mb-2 w-full" />
+          <input id="reminderTime" name="reminderTime" type="time" value={time} onChange={e => setTime(e.target.value)} className="p-2 border rounded mb-2 w-full" />
+          <select id="reminderRepeat" name="reminderRepeat" value={repeat} onChange={e => setRepeat(e.target.value)} className="p-2 border rounded mb-2 w-full">
             <option value="Nunca">Nunca</option>
             <option value="Diario">Diario</option>
             <option value="Semanal">Semanal</option>
             <option value="Mensual">Mensual</option>
           </select>
-          <select onChange={handleMedSelection} className="p-2 border rounded mb-2 w-full">
+          <select id="medicationSelection" name="medicationSelection" onChange={handleMedSelection} className="p-2 border rounded mb-2 w-full">
             <option value="">Seleccionar Medicamento</option>
             {medications.map((med) => (
               <option key={med.id} value={med.id}>{med.name}</option>

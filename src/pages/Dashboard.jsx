@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MedicationForm from '../components/MedicationForm';
@@ -11,7 +11,7 @@ const Dashboard = () => {
   const [medications, setMedications] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [error, setError] = useState('');
-  const [isMenuOpen, setIsMenuOpen] = useState(false); // Manage menu open state
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -34,20 +34,6 @@ const Dashboard = () => {
       .catch(() => navigate('/login'));
   }, [navigate]);
 
-  const checkReminders = () => {
-    const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
-    reminders.forEach(reminder => {
-      if (reminder.time === now && !reminder.completed) {
-        alert(`🔔 Recordatorio: ${reminder.name} - ${reminder.description}`);
-      }
-    });
-  };
-
-  useEffect(() => {
-    const interval = setInterval(checkReminders, 60000);
-    return () => clearInterval(interval);
-  }, [reminders]);
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('loggedInUser');
@@ -55,35 +41,16 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 bg-white dark:bg-gray-900 dark:text-white rounded shadow">
+    <div className="min-h-screen p-6 max-w-6xl mx-auto space-y-6 bg-white dark:bg-gray-900 dark:text-white rounded shadow relative">
+
       {error && <p className="text-red-500">{error}</p>}
 
-      {/* Menu */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
 
-        {/* Hamburger Icon */}
-        <div className="block md:hidden">
-          <button 
-            onClick={() => setIsMenuOpen(!isMenuOpen)} 
-            className="text-white focus:outline-none"
-          >
-            {isMenuOpen ? (
-              // Close icon
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-              </svg>
-            ) : (
-              // Hamburger icon
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {/* Menu Options (Mobile) */}
-        <div className={`md:flex ${isMenuOpen ? 'block' : 'hidden'} space-x-4`}>
+        {/* Menu Options (Desktop) */}
+        <div className="hidden md:flex space-x-4">
           <button 
             onClick={() => navigate('/history')} 
             className="bg-blue-500 text-white px-4 py-2 rounded"
@@ -109,8 +76,62 @@ const Dashboard = () => {
             Cerrar sesión
           </button>
         </div>
+
+        {/* Hamburger Icon (Mobile) */}
+        <div className="md:hidden">
+          <button 
+            onClick={() => setIsMenuOpen(!isMenuOpen)} 
+            className="text-white focus:outline-none bg-gray-800 p-2 rounded"
+          >
+            {isMenuOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16"></path>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
+      {/* Mobile Menu Overlay */}
+      {isMenuOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setIsMenuOpen(false)}></div>
+      )}
+
+      {/* Mobile Menu Drawer */}
+      <div className={`fixed top-0 right-0 h-full w-3/4 bg-gray-800 text-white shadow-lg z-50 transition-transform transform ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className="p-6 space-y-6">
+          <button 
+            onClick={() => { setIsMenuOpen(false); navigate('/history'); }} 
+            className="bg-blue-500 text-white px-4 py-2 rounded w-full text-left"
+          >
+            Ver historial
+          </button>
+          <button 
+            onClick={() => { setIsMenuOpen(false); navigate('/charts'); }} 
+            className="bg-green-500 text-white px-4 py-2 rounded w-full text-left"
+          >
+            Ver gráficas
+          </button>
+          <button 
+            onClick={() => { setIsMenuOpen(false); navigate('/reminders'); }} 
+            className="bg-yellow-500 text-black px-4 py-2 rounded w-full text-left"
+          >
+            Recordatorios
+          </button>
+          <button 
+            onClick={() => { setIsMenuOpen(false); handleLogout(); }} 
+            className="bg-red-500 text-white px-4 py-2 rounded w-full text-left"
+          >
+            Cerrar sesión
+          </button>
+        </div>
+      </div>
+
+      {/* Main Content */}
       <div className="flex flex-col md:flex-row gap-6">
         <div className="md:w-1/3 space-y-6 bg-gray-100 dark:bg-gray-800 p-4 rounded">
           <MedicationList meds={medications} />
